@@ -1,5 +1,6 @@
 const { execFile } = require("child_process");
 const express = require("express");
+const net = require("net");
 const path = require("path");
 
 const app = express();
@@ -11,10 +12,10 @@ const recent = [
   { host: "booth-cam.club", status: "down", detail: "no reply" }
 ];
 
-const HOST = /^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*|(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3})$/;
+const HOSTNAME = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$/;
 
 function isHost(value) {
-  return value.length <= 253 && HOST.test(value);
+  return value.length <= 253 && (net.isIP(value) !== 0 || HOSTNAME.test(value));
 }
 
 function escapeHtml(value) {
@@ -91,7 +92,7 @@ function reply(res, host, err, stdout, stderr) {
 app.post("/", (req, res) => {
   const host = String(req.body.host || "").trim();
   if (!isHost(host)) {
-    return res.status(400).type("html").send(page("Use a hostname or an IPv4 address.", null));
+    return res.status(400).type("html").send(page("Use a hostname or an IP address.", null));
   }
   let child;
   try {

@@ -36,7 +36,7 @@ test("shell punctuation does not read the desk note", async () => {
     const body = await response.text();
     assert.equal(response.status, 400);
     assert.equal(body.includes("REACH-7741"), false);
-    assert.match(body, /hostname or an IPv4/);
+    assert.match(body, /hostname or an IP address/);
   } finally {
     server.close();
   }
@@ -52,6 +52,17 @@ test("localhost ping still comes back up", async () => {
     assert.match(body, />up</);
     assert.match(body, /1 received/);
     assert.equal(body.includes("REACH-7741"), false);
+  } finally {
+    server.close();
+  }
+});
+
+test("an IPv6 address is accepted", async () => {
+  const server = await listen();
+  const port = server.address().port;
+  try {
+    const response = await check(port, "::1");
+    assert.equal(response.status, 200);
   } finally {
     server.close();
   }
