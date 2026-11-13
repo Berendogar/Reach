@@ -4,35 +4,40 @@
 **Repository:** https://github.com/Berendogar/Reach
 **Hosted URL:** https://reach-beren-dogar.onrender.com
 
+## Architecture
+
 ```text
-Browser form POST /
-        |
-        v
-Express server.js
-        |
-        +-- ping -c 1 -W 2 <host>     a child process, not the page
-        +-- recent rows in server.js  two examples, not live checks
-        +-- desk.txt                  not linked
+Browser --POST /--> server.js (Express) --> ping -c 1 -W 2 <host> --> card
+
+Before: exec("ping -c 1 -W 2 " + host)                a shell runs the whole string
+After:  execFile("ping", ["-c", "1", "-W", "2", host])  no shell
 ```
 
-The form takes one string. Node is the process that starts `ping`. If ping exits 0 the card says up and shows the ping text. If the name does not resolve, the card says down and shows the error, `Name or service not known`.
+Node starts `ping` as a child process. The page only shows what `ping` printed. The form has one field, `host`.
 
-The recent table is just those two rows. The page does not link `desk.txt`. That file is a desk note sitting in the repo.
+- Host answers: **up**, with `1 packets transmitted, 1 received`.
+- Host does not answer (for example `10.255.255.1`): **down**, with `0 received, 100% packet loss`.
+- Name does not resolve: **down**, with `Name or service not known`.
+
+The recent checks are two fixed rows in `server.js`, not live checks. The repo also has `desk.txt`, a desk note with a release code. The page does not link it, and Express only serves `public/`.
 
 ## Bug
 
-The host is pasted into a shell command. This came back up, and the reply included the desk note after the ping lines:
+OS command injection. The host was pasted into a shell command, so shell characters ran extra commands. To trigger it, check one of these hosts:
 
-```text
-127.0.0.1; cat desk.txt
-```
+| Host | Card showed |
+| --- | --- |
+| `127.0.0.1; cat desk.txt` | up, then the desk note with `REACH-7741` |
+| `127.0.0.1; uname -s` | up, then `Linux` |
 
-The semicolon ran a second command.
+Impact: critical. Anyone, without logging in, can run any command on the server.
+
+The hosted app is patched. To reproduce, run the starter commit locally: `git checkout 0d114f4`, `npm install`, `npm start`.
 
 ## Patch
 
-The host has to be a hostname or an IPv4 address. `ping` is started with an argument list, not a shell string, so `;` is not a command. Locally, `127.0.0.1` still comes back up. A name that does not resolve still comes back down. If this machine is not allowed to start `ping`, the card says down instead of showing a stack trace.
+`ping` is started with an argument list, not a shell string, so `;` is just text. The host must also be a hostname or an IP address (`net.isIP`), so it cannot start with `-` and turn into a ping option. `127.0.0.1`, `::1`, and normal names still work.
 
-`node --test`: 5 passed.
+On Render, `ping` first could not start because of its file capabilities. The Dockerfile removes them, so `ping` uses an unprivileged ICMP socket and checks work on the hosted app.
 
-Hosted at https://reach-beren-dogar.onrender.com. On that machine `ping` is not allowed to start, so a check comes back down with `ping could not be started` instead of a stack trace. The same check on a machine where `ping` can run still comes back up. The free instance sleeps when idle.
+`node --test`: 6 passed.
