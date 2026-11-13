@@ -78,16 +78,30 @@ app.get("/", (_req, res) => {
   res.type("html").send(page(null, null));
 });
 
+function reply(res, host, err, stdout, stderr) {
+  if (res.headersSent) return;
+  let detail = (stdout || stderr || (err && err.message) || "no reply").slice(0, 800);
+  if (err && (err.code === "EPERM" || err.code === "ENOENT")) {
+    detail = "ping could not be started";
+  }
+  const status = err ? "down" : "up";
+  res.type("html").send(page(null, { host, status, detail }));
+}
+
 app.post("/", (req, res) => {
   const host = String(req.body.host || "").trim();
   if (!isHost(host)) {
     return res.status(400).type("html").send(page("Use a hostname or an IPv4 address.", null));
   }
-  execFile("ping", ["-c", "1", "-W", "2", host], { timeout: 4000 }, (err, stdout, stderr) => {
-    const detail = (stdout || stderr || (err && err.message) || "no reply").slice(0, 800);
-    const status = err ? "down" : "up";
-    res.type("html").send(page(null, { host, status, detail }));
-  });
+  let child;
+  try {
+    child = execFile("ping", ["-c", "1", "-W", "2", host], { timeout: 4000 }, (err, stdout, stderr) => {
+      reply(res, host, err, stdout, stderr);
+    });
+  } catch (err) {
+    return reply(res, host, err, "", "");
+  }
+  child.on("error", (err) => reply(res, host, err, "", ""));
 });
 
 function start(port = process.env.PORT || 3000) {

@@ -30,6 +30,6 @@ The semicolon ran a second command.
 
 ## Patch
 
-The host has to be a hostname or an IPv4 address. `ping` is started with an argument list, not a shell string, so `;` is not a command. `127.0.0.1` still comes back up. A name that does not resolve still comes back down.
+The host has to be a hostname or an IPv4 address. `ping` is started with an argument list, not a shell string, so `;` is not a command. Locally, `127.0.0.1` still comes back up. A name that does not resolve still comes back down. If this machine is not allowed to start `ping`, the card says down instead of showing a stack trace.
 
 `node --test`: 5 passed.
