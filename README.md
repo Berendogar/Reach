@@ -1,5 +1,8 @@
 # Reach
 
+Case Study 10, Beren Dogar. The architecture, the bug, and the patch are in
+[SUBMISSION.md](SUBMISSION.md).
+
 Is a club host up? Type a hostname or an IP. Reach pings it once and keeps the reply.
 
 Express and a static page. No database.

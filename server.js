@@ -1,7 +1,6 @@
+const { execFile } = require("child_process");
 const express = require("express");
-const { exec } = require("child_process");
 const path = require("path");
-const fs = require("fs");
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
@@ -11,6 +10,12 @@ const recent = [
   { host: "shop-printer.club", status: "up", detail: "1 packet, 12 ms" },
   { host: "booth-cam.club", status: "down", detail: "no reply" }
 ];
+
+const HOST = /^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*|(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3})$/;
+
+function isHost(value) {
+  return value.length <= 253 && HOST.test(value);
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -75,17 +80,25 @@ app.get("/", (_req, res) => {
 
 app.post("/", (req, res) => {
   const host = String(req.body.host || "").trim();
-  if (!host) {
-    return res.status(400).type("html").send(page("Host is required.", null));
+  if (!isHost(host)) {
+    return res.status(400).type("html").send(page("Use a hostname or an IPv4 address.", null));
   }
-  exec(`ping -c 1 -W 2 ${host}`, { timeout: 4000 }, (err, stdout, stderr) => {
+  execFile("ping", ["-c", "1", "-W", "2", host], { timeout: 4000 }, (err, stdout, stderr) => {
     const detail = (stdout || stderr || (err && err.message) || "no reply").slice(0, 800);
     const status = err ? "down" : "up";
     res.type("html").send(page(null, { host, status, detail }));
   });
 });
 
-const port = Number(process.env.PORT || 3000);
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Reach listening on ${port}`);
-});
+function start(port = process.env.PORT || 3000) {
+  return app.listen(port, "0.0.0.0");
+}
+
+if (require.main === module) {
+  const server = start();
+  server.on("listening", () => {
+    console.log(`Reach listening on ${server.address().port}`);
+  });
+}
+
+module.exports = { app, start };

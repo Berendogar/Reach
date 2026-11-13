@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: reach-beren-dogar
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
