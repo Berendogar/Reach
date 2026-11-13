@@ -2,6 +2,7 @@
 
 **Student:** Beren Dogar
 **Repository:** https://github.com/Berendogar/Reach
+**Hosted URL:** https://reach-beren-dogar.onrender.com
 
 ```text
 Browser form POST /
@@ -33,3 +34,5 @@ The semicolon ran a second command.
 The host has to be a hostname or an IPv4 address. `ping` is started with an argument list, not a shell string, so `;` is not a command. Locally, `127.0.0.1` still comes back up. A name that does not resolve still comes back down. If this machine is not allowed to start `ping`, the card says down instead of showing a stack trace.
 
 `node --test`: 5 passed.
+
+Hosted at https://reach-beren-dogar.onrender.com. On that machine `ping` is not allowed to start, so a check comes back down with `ping could not be started` instead of a stack trace. The same check on a machine where `ping` can run still comes back up. The free instance sleeps when idle.
